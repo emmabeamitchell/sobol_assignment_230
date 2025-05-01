@@ -1,0 +1,110 @@
+---
+title: "sobol assignment"
+author: "Emma Bea Mitchell"
+format: html
+embed-resources: true
+editor_options: 
+  chunk_output_type: console
+---
+load libraries
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(sensitivity)
+library(tidyverse)
+library(gridExtra)
+library(purrr)
+library(ggpubr)
+library(here)
+```
+
+Source the model for atomospheric conductance
+```{r}
+source(here("Catm.R"))
+```
+
+Generate parameter values for updated parameters
+```{r}
+np <- 1000
+k_o <- rnorm(mean = 0.1, sd = .1 * 0.01, n = np)
+k_d <- rnorm(mean = 0.7, sd = .7 * 0.01, n = np)
+v <- rnorm(mean = 300, sd = 50, n = np)
+height <- runif(min = 3.5, max = 5.5, n = np)
+
+X1 <- cbind.data.frame(k_o, k_d, v, height = height)
+
+k_o <- rnorm(mean = 0.1, sd = 0.01, n = np)
+k_d <- rnorm(mean = 0.7, sd = 0.01, n = np)
+v <- rnorm(mean = 300, sd = 50, n = np)
+height <- runif(min = 3.5, max = 5.5, n = np)
+
+X2 <- cbind.data.frame(k_o, k_d, v, height = height)
+
+sens_Catm_Sobol <- sobolSalt(model = NULL, X1, X2, nboot = 100)
+
+```
+
+Run the atmospheric conductance model for the parameters
+```{r}
+
+parms <- as.data.frame(sens_Catm_Sobol$X)
+colnames(parms) <- colnames(X1)
+res <- pmap_dbl(parms, Catm)
+
+
+sens_Catm_Sobol <- sensitivity::tell(sens_Catm_Sobol, res, res.names = "ga")
+
+```
+
+Plot conductance estimates in a way that accounts for uncertainty
+```{r}
+# graph two most sensitive parameters
+both <- cbind.data.frame(parms, gs = sens_Catm_Sobol$y)
+
+# look at overall gs sensitivity to uncertainty
+plot1 <- ggplot(both, aes(x = gs)) +
+  geom_histogram() +
+  geom_vline(xintercept = mean(both$gs), col = "cyan")
+
+print(plot1)
+```
+
+
+Plot conductance estimates against windspeed use the parameter that is 2nd in terms of total effect on response
+```{r}
+# look at response of conductance and wind speed with height (second in total effect)
+plot2.1 <- ggplot(both, aes(v, gs, col = height)) +
+  geom_point() +
+  labs(y = "Conductance (mm/s)", x = "Windspeed")
+
+# look at response of conductance and height with wind speed
+plot2.2 <- ggplot(both, aes(height, gs, col = v)) +
+  geom_point() +
+  labs(y = "Conductance (mm/s)", x = "Vegetation Height")
+
+print(plot2.1)
+print(plot2.2)
+```
+
+Estimate the Sobol Indices for your output
+```{r}
+# main effect:  partitions variance (main effect without co-variance) - sums approximately to one
+sens_Catm_Sobol$S
+# useful to add names
+row.names(sens_Catm_Sobol$S) <- colnames(parms)
+sens_Catm_Sobol$S
+
+# total effect - accounts for parameter interactions
+row.names(sens_Catm_Sobol$T) <- colnames(parms)
+sens_Catm_Sobol$T
+
+# Both the main effect and total effect can tell us something about how the parameter influences results
+
+
+print(sens_Catm_Sobol)
+```
+
+Comment on what this tells you about how atmospheric conductance and its sensitivity to variation in wind speed differs in this setting as compared to the setting that we examined in class where wind speed was lower and less variable and vegetation was taller
+
+Our plot that compares wind speed to conductance has a much stronger positive relationship and correlation than the plot comparing the same thing in class. This means that atmospheric conductance IS sensitive to changes in wind speed variation because the conductance is consistently increasing as wind speed increases. 
+
+In the sensitivity analysis in this setting with shorter vegetation, the vegetation height had the second biggest effect of all the parameters, while the setting in class had vegetation height as the smallest effect of all the parameters. 
