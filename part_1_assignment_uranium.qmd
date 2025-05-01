@@ -1,0 +1,11 @@
+---
+title: "Assignment Part 1: Uranium"
+author: "Emma Bea Mitchell"
+format: html
+---
+
+After going through the paper, write a paragraph describing how results of the sensitivity analysis reported on in the paper might contribute to understanding (or prediction) within an environmental problem solving or management context.
+
+Paper: Uranium in Groundwater Model
+
+The sensitivity analysis in the paper looked at two different models, one with dermal exposure and one with ingestion exposure. In these models they had input parameters such as body weight, exposure time, fraction of contact of skin with pollutant, and exposure time during shower. The sobol sensitivity analysis found that uranium concentration in water (Cw), intake rate (IR), and exposure frequency (EF) strongly affected health outcomes in those exposed. These results could be used by environmental managers or problem solvers to effectively understand what parameters need to be targeted to minimize health risks. 
